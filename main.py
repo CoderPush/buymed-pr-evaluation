@@ -182,6 +182,7 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
 
     result["Found rate"] /= result["Number of images"]
     result["Top 1 accuracy"] /= result["Number of images"]
+    result["Rate of not found warning"] /= result["Number of images"]
     result["Average time taken per image"] /= result["Number of images"]
     print(result)
 
