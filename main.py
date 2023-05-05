@@ -7,6 +7,7 @@ import re
 import concurrent.futures
 from datetime import datetime
 import time
+import json
 
 from dotenv import load_dotenv
 import unicodedata
@@ -63,6 +64,7 @@ def get_image_paths(path: str) -> dict:
 
 
 def no_accent_vietnamese(s):
+    s = re.sub(",", "", s)
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("utf-8")
     # s = re.sub(r"[àáạảãâầấậẩẫăằắặẳẵ]", "a", s)
     # s = re.sub(r"[ÀÁẠẢÃĂẰẮẶẲẴÂẦẤẬẨẪ]", "A", s)
@@ -92,14 +94,13 @@ def sku_mapping(df_img_paths: pd.DataFrame) -> None:
     )
     name_to_sku = dict(zip(df_product_list.ProductName, df_product_list.SKU))
     # preprocess product name
-    df_img_paths["product_name"] = df_img_paths["product_name"].str.replace(",", "")
     df_img_paths["product_name"] = df_img_paths["product_name"].apply(
         no_accent_vietnamese
     )
     # map sku
     df_img_paths["sku"] = df_img_paths["product_name"].map(name_to_sku)
     # drop images with no sku
-    df_img_paths.dropna(subset=["sku"], inplace=True)
+    df_img_paths["is_in_db"] = df_img_paths["sku"].notnull()
 
 
 def upload_image(image_path: str) -> str:
@@ -122,6 +123,9 @@ def upload_image(image_path: str) -> str:
 
 
 def save_result(result):
+    # print the result dict in a nice json format
+    print(json.dumps(result, indent=4))
+
     # Append result to result.txt with the format key: value and start with the current time
     result["Time"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     with open("result.txt", "a") as f:
@@ -129,6 +133,67 @@ def save_result(result):
             f.write(f"{key}: {value}\n")
         f.write("-" * 50)
         f.write("\n")
+
+
+def save_detail_result(df_img_paths, suggestions, mode):
+    """
+    Save the suggestions for each image in a csv file. The csv file contains the following columns:
+        - `path`: path to the image
+        - `sku`: sku of the product
+        - `is_in_db`: whether the product is in the database
+        - `1st_suggestion`: sku of the 1st suggestion
+        - `1st_similarity`: similarity score of the 1st suggestion
+        - `2nd_suggestion`: sku of the 2nd suggestion
+        - `2nd_similarity`: similarity score of the 2nd suggestion
+        - `3rd_suggestion`: sku of the 3rd suggestion
+        - `3rd_similarity`: similarity score of the 3rd suggestion
+        - `top_1`: whether the 1st suggestion is correct
+        - `found`: whether the product is found within the 3 suggestions
+    """
+
+    def get_suggestion(suggestions, index, key="sku"):
+        """Get the sku and similarity score of the 1st, 2nd and 3rd suggestion. Return None if there is no suggestion
+
+        :param suggestions: list of suggestions
+        :param index: index of the return value
+        :param key: key of the return value (sku or similarity)
+        """
+        if index > len(suggestions) - 1:
+            return None
+        if key not in suggestions[index]:
+            return None
+        return suggestions[index][key]
+
+    detail_result = df_img_paths[["path", "sku", "is_in_db"]].copy()
+    detail_result["1st_suggestion"] = [
+        get_suggestion(x, index=0, key="sku") for x in suggestions
+    ]
+    detail_result["1st_similarity"] = [
+        get_suggestion(x, index=0, key="similarity") for x in suggestions
+    ]
+    detail_result["2nd_suggestion"] = [
+        get_suggestion(x, index=1, key="sku") for x in suggestions
+    ]
+    detail_result["2nd_similarity"] = [
+        get_suggestion(x, index=1, key="similarity") for x in suggestions
+    ]
+    detail_result["3rd_suggestion"] = [
+        get_suggestion(x, index=2, key="sku") for x in suggestions
+    ]
+    detail_result["3rd_similarity"] = [
+        get_suggestion(x, index=2, key="similarity") for x in suggestions
+    ]
+    detail_result["top_1"] = detail_result["sku"] == detail_result["1st_suggestion"]
+    detail_result["found"] = (
+        (detail_result["sku"] == detail_result["1st_suggestion"])
+        | (detail_result["sku"] == detail_result["2nd_suggestion"])
+        | (detail_result["sku"] == detail_result["3rd_suggestion"])
+    )
+
+    output_path = (
+        f"detail_result_mode{mode}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv"
+    )
+    detail_result.to_csv(output_path, index=False)
 
 
 def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
@@ -140,6 +205,7 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
         response = upload_image(row["path"])
         similar_images = response["similar_images"]
         sku_list = [x["sku"] for x in similar_images]
+        suggestions[index] = similar_images
 
         if row["sku"] in sku_list:
             result["Found rate"] += 1
@@ -162,6 +228,8 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
             )
 
     started_time = time.time()
+    # create a list with the same length of df_img_paths to store the suggested products
+    suggestions = [None] * len(df_img_paths)
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         tasks = {
             executor.submit(get_similar_images, index, row): row
@@ -184,9 +252,9 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
     result["Top 1 accuracy"] /= result["Number of images"]
     result["Rate of not found warning"] /= result["Number of images"]
     result["Average time taken per image"] /= result["Number of images"]
-    print(result)
 
     save_result(result)
+    save_detail_result(df_img_paths, suggestions, mode=1)
 
 
 def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
@@ -197,6 +265,7 @@ def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
     def get_similar_images(index, row):
         response = upload_image(row["path"])
         similar_images = response["similar_images"]
+        suggestions[index] = similar_images
 
         if similar_images[0]["similarity"] < result["Threshold"]:
             result["Rate of not found warning"] += 1
@@ -213,6 +282,7 @@ def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
             )
 
     started_time = time.time()
+    suggestions = [None] * len(df_img_paths)
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         tasks = {
             executor.submit(get_similar_images, index, row): row
@@ -233,9 +303,9 @@ def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
 
     result["Rate of not found warning"] /= result["Number of images"]
     result["Average time taken per image"] /= result["Number of images"]
-    print(result)
 
     save_result(result)
+    save_detail_result(df_img_paths, suggestions, mode=2)
 
 
 def main():
@@ -284,28 +354,34 @@ def main():
         print("# of images after sampling: ", len(df_img_paths))
 
     # SKU mapping
+    print("\n" + " Mapping SKU... ".center(50, "-"))
+    sku_mapping(df_img_paths)
     if mode == 1:
-        print("\n" + " Mapping SKU... ".center(50, "-"))
-        sku_mapping(df_img_paths)
-    else:
-        print("-" * 50)
+        df_img_paths = df_img_paths[df_img_paths["is_in_db"] == True]
+    elif mode == 2:
+        df_img_paths = df_img_paths[df_img_paths["is_in_db"] == False]
+    print("# of testing images after filtering: ", len(df_img_paths))
+    print(
+        "# of testing products after filtering: ",
+        df_img_paths["product_name"].nunique(),
+    )
 
     df_img_paths.reset_index(drop=True, inplace=True)
     result["Number of images"] = len(df_img_paths)
     result["Number of products"] = df_img_paths["product_name"].nunique()
-    print("# of testing images: ", result["Number of images"])
-    print("# of testing products: ", result["Number of products"])
     assert result["Number of images"] > 0, "No images found after filtering"
     assert result["Number of products"] > 0, "No products found after filtering"
 
     # Evaluate
     print("\n" + " Evaluating... ".center(50, "#"))
     if mode == 1:
-        print("Evaluating found rate accuracy...")
+        print(f"Mode {mode} - Evaluating found rate accuracy...")
         evaluate_accuracy(df_img_paths, result)
     elif mode == 2:
-        print("Evaluating not found rate...")
+        print(f"Mode {mode} - Evaluating not found rate...")
         evaluate_not_found_rate(df_img_paths, result)
+
+    print("\n" + " Done ".center(50, "#"))
 
 
 if __name__ == "__main__":

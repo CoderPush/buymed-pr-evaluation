@@ -48,20 +48,35 @@ The script can test in two modes:
 
 If the flag `--sample_only` is set, the script will randomly select one image from each product to test. If this flag is not set, the script will test on all images.
 
+### The procedure of the script
+
+In the first step, the script will find all images in the data folder.
+
+Then it uses `product_list.csv` to map the product name with the SKU which is used in the ML Service. The `product_list.csv` file should have the following columns:
+
+```csv
+ProductName,ImageUrl,SKU
+```
+
+Depend on the mode, the script will select the products to test. If the mode is 1, the script will select the products that are in the database. If the mode is 2, the script will select the products that are not in the database.
+
+Then it will send the image to the API Service. The API Service will return the top 3 suggestions for the image.
+
 ## Results
 
-The result will be saved in "results.txt" in the root directory. The result will be in the following format:
+The overall result will be saved in "result.txt" in the root directory. The result will be in the following format:
 
 - For mode 1:
 
 ```
 Number of products: <number_of_products>
 Number of images: <number_of_images>
-
 Found rate: <found_rate>
 Top 1 accuracy: <top_1_accuracy>
-
+Rate of not found warning: <not_found_warning_rate>
+Threshold: <threshold>
 Average time taken per image: <time_taken>
+Time: <time>
 ```
 
 - For mode 2:
@@ -69,10 +84,24 @@ Average time taken per image: <time_taken>
 ```
 Number of products: <number_of_products>
 Number of images: <number_of_images>
-
 Rate of not found warning: <not_found_warning_rate>
-
+Threshold: <threshold>
 Average time taken per image: <time_taken>
+Time: <time>
 ```
 
 Based on a threshold and similarity scores, a not found warning could be shown to the user. The warning rate is the rate of products that have a warning.
+
+A detail result will be saved in "detail*result*<mode>\_<timestamp>.csv" in the root directory. The csv file contains the following columns:
+
+- `path`: path to the image
+- `sku`: sku of the product
+- `is_in_db`: whether the product is in the database
+- `1st_suggestion`: sku of the 1st suggestion
+- `1st_similarity`: similarity score of the 1st suggestion
+- `2nd_suggestion`: sku of the 2nd suggestion
+- `2nd_similarity`: similarity score of the 2nd suggestion
+- `3rd_suggestion`: sku of the 3rd suggestion
+- `3rd_similarity`: similarity score of the 3rd suggestion
+- `top_1`: whether the 1st suggestion is correct
+- `found`: whether the product is found within the 3 suggestions

@@ -97,3 +97,5 @@ ENV/
 **/tmp/*
 .DS_Store
 data/
+result.txt
+detail_result*.csv

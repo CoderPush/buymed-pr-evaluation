@@ -32,3 +32,141 @@ Top 1 accuracy: 0.9574726609963548
 Average time taken per image: 0.3571748481166466
 Time: 05/05/2023 02:50:43
 --------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.4605451612903226
+Threshold: 0.8
+Time: 05/05/2023 10:28:37
+--------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.35280000000000006
+Threshold: 0.8
+Time: 05/05/2023 10:33:16
+--------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.6046806451612902
+Threshold: 0.8
+Time: 05/05/2023 10:57:59
+--------------------------------------------------
+Number of products: 50
+Number of images: 50
+Rate of not found warning: 0.96
+Average time taken per image: 0.34789399999999987
+Threshold: 0.8
+Time: 05/05/2023 11:03:46
+--------------------------------------------------
+Number of products: 10
+Number of images: 10
+Found rate: 1.0
+Top 1 accuracy: 0.7
+Rate of not found warning: 0.0
+Average time taken per image: 1.01523
+Threshold: 0.8
+Time: 05/05/2023 11:22:04
+--------------------------------------------------
+Number of products: 10
+Number of images: 57
+Found rate: 1.0
+Top 1 accuracy: 0.7017543859649122
+Rate of not found warning: 0.0
+Average time taken per image: 0.3454649122807017
+Threshold: 0.8
+Time: 05/05/2023 11:24:09
+--------------------------------------------------
+Number of products: 1
+Number of images: 6
+Found rate: 1.0
+Top 1 accuracy: 1.0
+Rate of not found warning: 0.0
+Average time taken per image: 0.3352
+Threshold: 0.8
+Time: 05/05/2023 11:31:36
+--------------------------------------------------
+Number of products: 1
+Number of images: 6
+Found rate: 1.0
+Top 1 accuracy: 1.0
+Rate of not found warning: 0.0
+Average time taken per image: 0.3245
+Threshold: 0.8
+Time: 05/05/2023 11:33:16
+--------------------------------------------------
+Number of products: 4
+Number of images: 21
+Found rate: 1.0
+Top 1 accuracy: 0.47619047619047616
+Rate of not found warning: 0.0
+Average time taken per image: 0.3506380952380952
+Threshold: 0.8
+Time: 05/05/2023 11:35:29
+--------------------------------------------------
+Number of products: 2
+Number of images: 9
+Found rate: 1.0
+Top 1 accuracy: 1.0
+Rate of not found warning: 0.0
+Average time taken per image: 0.3470666666666667
+Threshold: 0.8
+Time: 05/05/2023 11:37:30
+--------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.7545870967741938
+Threshold: 0.8
+Time: 05/05/2023 15:31:48
+--------------------------------------------------
+Number of products: 50
+Number of images: 50
+Rate of not found warning: 0.96
+Average time taken per image: 0.34886599999999995
+Threshold: 0.8
+Time: 05/05/2023 15:33:38
+--------------------------------------------------
+Number of products: 50
+Number of images: 50
+Rate of not found warning: 0.96
+Average time taken per image: 0.37288
+Threshold: 0.8
+Time: 05/05/2023 16:39:37
+--------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.3641677419354839
+Threshold: 0.8
+Time: 05/05/2023 16:41:06
+--------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.35020322580645163
+Threshold: 0.8
+Time: 05/05/2023 16:49:42
+--------------------------------------------------
+Number of products: 31
+Number of images: 31
+Found rate: 1.0
+Top 1 accuracy: 0.967741935483871
+Rate of not found warning: 0.0
+Average time taken per image: 0.3641774193548387
+Threshold: 0.8
+Time: 05/05/2023 16:53:25
+--------------------------------------------------
