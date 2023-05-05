@@ -36,13 +36,15 @@ UPLOAD_URL=<upload_url>
 ## Usage
 
 ```bash
-python main.py --path <path_to_data_folder> [--not_in_db --threshold <threshold>] [--sample_only]
+python main.py --path <path_to_data_folder> --threshold <threshold> [--not_in_db] [--sample_only]
 ```
 
 The script can test in two modes:
 
 - **Mode 1**: Test only on products that are in the database. This is useful for testing the performance of the API Service on found rate and accuracy.
 - **Mode 2**: using the flag `--not_in_db`. Test only on products that are not in the database. This is useful for testing the performance of the API Service on new products. If this flag is set, a threshold (a number between 0 to 1) must be specified.
+
+`--threshold` is the threshold for similarity scores. If the similarity score is below the threshold, the product is considered not found.
 
 If the flag `--sample_only` is set, the script will randomly select one image from each product to test. If this flag is not set, the script will test on all images.
 

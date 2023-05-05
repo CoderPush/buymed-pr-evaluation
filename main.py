@@ -26,7 +26,9 @@ def initilize_result_dict(not_in_db_flag: bool) -> dict:
             "Number of images": 0,
             "Found rate": 0,
             "Top 1 accuracy": 0,
+            "Rate of not found warning": 0,
             "Average time taken per image": 0,
+            "Threshold": 0,
         }
     else:
         result = {
@@ -34,6 +36,7 @@ def initilize_result_dict(not_in_db_flag: bool) -> dict:
             "Number of images": 0,
             "Rate of not found warning": 0,
             "Average time taken per image": 0,
+            "Threshold": 0,
         }
     assert result["Number of images"] == 0, "Result dict must be initialized"
     return mode, result
@@ -137,10 +140,14 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
         response = upload_image(row["path"])
         similar_images = response["similar_images"]
         sku_list = [x["sku"] for x in similar_images]
+
         if row["sku"] in sku_list:
             result["Found rate"] += 1
             if row["sku"] == sku_list[0]:
                 result["Top 1 accuracy"] += 1
+
+        if similar_images[0]["similarity"] < result["Threshold"]:
+            result["Rate of not found warning"] += 1
 
         # remove non-numeric characters from time_found but not . (dot)
         response["time_found"] = re.sub("[^0-9.]", "", response["time_found"])
@@ -181,9 +188,7 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
     save_result(result)
 
 
-def evaluate_not_found_rate(
-    df_img_paths: pd.DataFrame, threshold: float, result: dict
-) -> None:
+def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
     """
     Evaluate the rate of not found warning of the model
     """
@@ -192,7 +197,7 @@ def evaluate_not_found_rate(
         response = upload_image(row["path"])
         similar_images = response["similar_images"]
 
-        if similar_images[0]["similarity"] < threshold:
+        if similar_images[0]["similarity"] < result["Threshold"]:
             result["Rate of not found warning"] += 1
 
         response["time_found"] = re.sub("[^0-9.]", "", response["time_found"])
@@ -226,7 +231,6 @@ def evaluate_not_found_rate(
     #     break
 
     result["Rate of not found warning"] /= result["Number of images"]
-    result["Threshold"] = threshold
     result["Average time taken per image"] /= result["Number of images"]
     print(result)
 
@@ -254,14 +258,14 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.not_in_db:
-        if not args.threshold:
-            raise ValueError("You need to specify a threshold for the similarity score")
-        if not (0 <= args.threshold <= 1):
-            raise ValueError("The threshold must be between 0 and 1")
+    if not args.threshold:
+        raise ValueError("You need to specify a threshold for the similarity scores")
+    if not (0 <= args.threshold <= 1):
+        raise ValueError("The threshold must be between 0 and 1")
 
     # initialize result dict
     mode, result = initilize_result_dict(args.not_in_db)
+    result["Threshold"] = args.threshold
 
     # Read data from args.path
     df_img_paths = pd.DataFrame(get_image_paths(args.path))
@@ -290,6 +294,8 @@ def main():
     result["Number of products"] = df_img_paths["product_name"].nunique()
     print("# of testing images: ", result["Number of images"])
     print("# of testing products: ", result["Number of products"])
+    assert result["Number of images"] > 0, "No images found after filtering"
+    assert result["Number of products"] > 0, "No products found after filtering"
 
     # Evaluate
     print("\n" + " Evaluating... ".center(50, "#"))
@@ -298,7 +304,7 @@ def main():
         evaluate_accuracy(df_img_paths, result)
     elif mode == 2:
         print("Evaluating not found rate...")
-        evaluate_not_found_rate(df_img_paths, args.threshold, result)
+        evaluate_not_found_rate(df_img_paths, result)
 
 
 if __name__ == "__main__":
