@@ -151,18 +151,20 @@ def save_detail_result(df_img_paths, suggestions, mode):
         - `found`: whether the product is found within the 3 suggestions
     """
 
-    def get_suggestion(suggestions, index, key="sku"):
+    def get_suggestion(similar_images, index, key="sku"):
         """Get the sku and similarity score of the 1st, 2nd and 3rd suggestion. Return None if there is no suggestion
 
-        :param suggestions: list of suggestions
+        :param similar_images: list of similar_images
         :param index: index of the return value
         :param key: key of the return value (sku or similarity)
         """
-        if index > len(suggestions) - 1:
+        if (not similar_images) or (not isinstance(similar_images, list)):
             return None
-        if key not in suggestions[index]:
+        if index > len(similar_images) - 1:
             return None
-        return suggestions[index][key]
+        if key not in similar_images[index]:
+            return None
+        return similar_images[index][key]
 
     detail_result = df_img_paths[["path", "sku", "is_in_db"]].copy()
     detail_result["1st_suggestion"] = [
@@ -195,6 +197,23 @@ def save_detail_result(df_img_paths, suggestions, mode):
     )
     detail_result.to_csv(output_path, index=False)
 
+    # Reload the csv file for testing
+    reloaded = pd.read_csv(output_path)
+    assert len(reloaded) == len(
+        detail_result
+    ), "ERROR - save_detail_result() failed: Length of reloaded csv is not correct"
+
+    print("\n" + " Detail result saved ".center(50, "#"))
+    print(f"Output path: {output_path}")
+    print(f"Number of images: {len(detail_result)}")
+    print(f"Number of products: {detail_result['sku'].nunique()}")
+
+    # print warning if there is any row with no suggestions in the detail result
+    if detail_result["1st_suggestion"].isnull().any():
+        print(
+            f"WARNING: There are {detail_result['1st_suggestion'].isnull().sum()} images with no suggestions"
+        )
+
 
 def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
     """
@@ -222,10 +241,14 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
 
         if (index % 50 == 0) and (index > 0):
             time_taken = time.time() - started_time
-            print(f"Processed {index+1} images in {time_taken} seconds")
+            print(
+                f"Processed {index}/{len(df_img_paths)}  images in {round(time_taken)} seconds"
+            )
+            print(f"Top 1 accuracy: {result['Top 1 accuracy'] / (index+1)}")
             print(
                 f"Avg time taken per image: {result['Average time taken per image'] / (index+1)}"
             )
+            print("-" * 50)
 
     started_time = time.time()
     # create a list with the same length of df_img_paths to store the suggested products
@@ -276,10 +299,16 @@ def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
 
         if (index % 50 == 0) and (index > 0):
             time_taken = time.time() - started_time
-            print(f"Processed {index+1} images in {time_taken} seconds")
+            print(
+                f"Processed {index}/{len(df_img_paths)} images in {round(time_taken)} seconds"
+            )
+            print(
+                f"Rate of not found warning: {result['Rate of not found warning'] / (index+1)}"
+            )
             print(
                 f"Avg time taken per image: {result['Average time taken per image'] / (index+1)}"
             )
+            print("-" * 50)
 
     started_time = time.time()
     suggestions = [None] * len(df_img_paths)
