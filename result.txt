@@ -197,3 +197,30 @@ Average time taken per image: 0.37591587301587304
 Threshold: 0.8
 Time: 10/05/2023 16:19:36
 --------------------------------------------------
+Number of products: 12
+Number of images: 12
+Found rate: 0.9166666666666666
+Top 1 accuracy: 0.8333333333333334
+Rate of not found warning: 0.08333333333333333
+Average time taken per image: 1.150925
+Threshold: 0.8
+Time: 11/05/2023 10:59:30
+--------------------------------------------------
+Number of products: 12
+Number of images: 12
+Found rate: 0.9166666666666666
+Top 1 accuracy: 0.8333333333333334
+Rate of not found warning: 0.08333333333333333
+Average time taken per image: 0.38876666666666665
+Threshold: 0.8
+Time: 11/05/2023 11:10:37
+--------------------------------------------------
+Number of products: 12
+Number of images: 12
+Found rate: 0.9166666666666666
+Top 1 accuracy: 0.8333333333333334
+Rate of not found warning: 0.08333333333333333
+Average time taken per image: 0.380625
+Threshold: 0.8
+Time: 11/05/2023 11:13:20
+--------------------------------------------------

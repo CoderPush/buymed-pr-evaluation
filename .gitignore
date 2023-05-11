@@ -99,3 +99,4 @@ ENV/
 data/
 result.txt
 detail_result*.csv
+test_input*

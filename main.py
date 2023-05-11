@@ -94,13 +94,28 @@ def sku_mapping(df_img_paths: pd.DataFrame) -> None:
     )
     name_to_sku = dict(zip(df_product_list.ProductName, df_product_list.SKU))
     # preprocess product name
-    df_img_paths["product_name"] = df_img_paths["product_name"].apply(
+    df_img_paths["product_name_mapping"] = df_img_paths["product_name"].apply(
         no_accent_vietnamese
     )
     # map sku
-    df_img_paths["sku"] = df_img_paths["product_name"].map(name_to_sku)
+    df_img_paths["sku"] = df_img_paths["product_name_mapping"].map(name_to_sku)
     # drop images with no sku
     df_img_paths["is_in_db"] = df_img_paths["sku"].notnull()
+
+    try:
+        # export a report of product name and is_in_db to test_input_{timestamp}.csv
+        test_input_report = (
+            df_img_paths.groupby(["product_name", "is_in_db"])
+            .size()
+            .reset_index()
+            .sort_values(by="is_in_db", ascending=False)
+        )
+        columns = ["product_name", "is_in_db"]
+        test_input_report[columns].to_csv(
+            f"test_input_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv", index=False
+        )
+    except Exception as e:
+        print("WARNING - sku_mapping(): Cannot export test_input report", e)
 
 
 def upload_image(image_path: str) -> str:
@@ -166,25 +181,38 @@ def save_detail_result(df_img_paths, suggestions, mode):
             return None
         return similar_images[index][key]
 
+    df_product_list = pd.read_csv("product_list.csv", encoding="utf-8")
+    sku_to_url = dict(zip(df_product_list.SKU, df_product_list.ImageUrl))
+
     detail_result = df_img_paths[["path", "sku", "is_in_db"]].copy()
+    detail_result["product_image_url"] = detail_result["sku"].map(sku_to_url)
     detail_result["1st_suggestion"] = [
         get_suggestion(x, index=0, key="sku") for x in suggestions
     ]
     detail_result["1st_similarity"] = [
         get_suggestion(x, index=0, key="similarity") for x in suggestions
     ]
+    detail_result["1st_suggestion_image_url"] = detail_result["1st_suggestion"].map(
+        sku_to_url
+    )
     detail_result["2nd_suggestion"] = [
         get_suggestion(x, index=1, key="sku") for x in suggestions
     ]
     detail_result["2nd_similarity"] = [
         get_suggestion(x, index=1, key="similarity") for x in suggestions
     ]
+    detail_result["2nd_suggestion_image_url"] = detail_result["2nd_suggestion"].map(
+        sku_to_url
+    )
     detail_result["3rd_suggestion"] = [
         get_suggestion(x, index=2, key="sku") for x in suggestions
     ]
     detail_result["3rd_similarity"] = [
         get_suggestion(x, index=2, key="similarity") for x in suggestions
     ]
+    detail_result["3rd_suggestion_image_url"] = detail_result["3rd_suggestion"].map(
+        sku_to_url
+    )
     detail_result["top_1"] = detail_result["sku"] == detail_result["1st_suggestion"]
     detail_result["found"] = (
         (detail_result["sku"] == detail_result["1st_suggestion"])
@@ -195,7 +223,24 @@ def save_detail_result(df_img_paths, suggestions, mode):
     output_path = (
         f"detail_result_mode{mode}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv"
     )
-    detail_result.to_csv(output_path, index=False)
+    columns = [
+        "path",
+        "sku",
+        "product_image_url",
+        "is_in_db",
+        "found",
+        "top_1",
+        "1st_suggestion",
+        "1st_similarity",
+        "1st_suggestion_image_url",
+        "2nd_suggestion",
+        "2nd_similarity",
+        "2nd_suggestion_image_url",
+        "3rd_suggestion",
+        "3rd_similarity",
+        "3rd_suggestion_image_url",
+    ]
+    detail_result[columns].to_csv(output_path, index=False)
 
     # Reload the csv file for testing
     reloaded = pd.read_csv(output_path)
