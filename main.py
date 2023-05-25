@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import pathlib
 import pandas as pd
+import numpy as np
 import requests
 import os
 import re
@@ -320,6 +321,12 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
     result["Top 1 accuracy"] /= result["Number of images"]
     result["Rate of not found warning"] /= result["Number of images"]
     result["Average time taken per image"] /= result["Number of images"]
+
+    # calculate 95% quantile of first suggestion similarity
+    first_suggestion_similarity = [
+        similar_images[0]["similarity"] for similar_images in suggestions
+    ]
+    result["Suggested Threshold"] = np.quantile(first_suggestion_similarity, 0.05)
 
     save_result(result)
     save_detail_result(df_img_paths, suggestions, mode=1)
