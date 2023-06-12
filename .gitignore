@@ -97,6 +97,6 @@ ENV/
 **/tmp/*
 .DS_Store
 data/
-result.txt
-detail_result*.csv
-test_input*
+*result*.txt
+*detail_result*.csv
+*test_input*.csv

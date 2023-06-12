@@ -18,6 +18,7 @@ load_dotenv()
 RANDOM_SEED = 1234
 BASE_URL = os.environ.get("BASE_URL")
 UPLOAD_API = os.environ.get("UPLOAD_API")
+STR_NOW = datetime.now().strftime("%d%m%Y_%H%M%S")
 
 
 def initilize_result_dict(not_in_db_flag: bool) -> dict:
@@ -112,9 +113,7 @@ def sku_mapping(df_img_paths: pd.DataFrame) -> None:
             .sort_values(by="is_in_db", ascending=False)
         )
         columns = ["product_name", "is_in_db"]
-        test_input_report[columns].to_csv(
-            f"test_input_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv", index=False
-        )
+        test_input_report[columns].to_csv(f"{STR_NOW}_test_input.csv", index=False)
     except Exception as e:
         print("WARNING - sku_mapping(): Cannot export test_input report", e)
 
@@ -144,7 +143,7 @@ def save_result(result):
 
     # Append result to result.txt with the format key: value and start with the current time
     result["Time"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    with open("result.txt", "a") as f:
+    with open(f"{STR_NOW}_result.txt", "a") as f:
         for key, value in result.items():
             f.write(f"{key}: {value}\n")
         f.write("-" * 50)
@@ -233,9 +232,7 @@ def save_detail_result(df_img_paths, suggestions, mode):
         | (detail_result["sku"] == detail_result["3rd_suggestion"])
     )
 
-    output_path = (
-        f"detail_result_mode{mode}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv"
-    )
+    output_path = f"{STR_NOW}_mode{mode}_detail_result.csv"
     columns = [
         "path",
         "sku",
