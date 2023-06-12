@@ -188,9 +188,17 @@ def save_detail_result(df_img_paths, suggestions, mode):
     detail_result = df_img_paths[["path", "sku", "is_in_db"]].copy()
     detail_result["product_image_url"] = detail_result["sku"].map(sku_to_url)
 
-    similar_images = [x["similar_images"] for x in suggestions]
-    detail_result["time_taken"] = [x["time_found"] for x in suggestions]
+    similar_images = [None] * len(df_img_paths)
+    time_taken = [None] * len(df_img_paths)
+    for index, suggestion in enumerate(suggestions):
+        try:
+            similar_images[index] = suggestion["similar_images"]
+            time_taken[index] = suggestion["time_found"]
+        except Exception as e:
+            print(f"WARNING - save_detail_result(): Cannot get suggestion {index}", e)
+            continue
 
+    detail_result["time_taken"] = time_taken
     detail_result["1st_suggestion"] = [
         get_suggestion(x, index=0, key="sku") for x in similar_images
     ]
@@ -332,9 +340,13 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
     result["Average time taken per image"] /= result["Number of images"]
 
     # calculate 95% quantile of first suggestion similarity
-    first_suggestion_similarity = [
-        item["similar_images"][0]["similarity"] for item in suggestions
-    ]
+    first_suggestion_similarity = []
+    for item in suggestions:
+        try:
+            similarity = item["similar_images"][0]["similarity"]
+        except:
+            continue
+        first_suggestion_similarity.append(similarity)
     result["Suggested Threshold"] = np.quantile(first_suggestion_similarity, 0.05)
 
     save_result(result)

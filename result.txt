@@ -314,3 +314,23 @@ Threshold: 0.7
 Suggested Threshold: 0.5515274405479431
 Time: 12/06/2023 18:45:41
 --------------------------------------------------
+Number of products: 1053
+Number of images: 1053
+Found rate: 0.9753086419753086
+Top 1 accuracy: 0.956315289648623
+Rate of not found warning: 0.06552706552706553
+Average time taken per image: 0.08896258309591634
+Threshold: 0.7
+Suggested Threshold: 0.6548650741577149
+Time: 12/06/2023 21:25:38
+--------------------------------------------------
+Number of products: 1053
+Number of images: 1053
+Found rate: 0.9753086419753086
+Top 1 accuracy: 0.956315289648623
+Rate of not found warning: 0.06552706552706553
+Average time taken per image: 0.09036809116809123
+Threshold: 0.7
+Suggested Threshold: 0.6548650741577149
+Time: 12/06/2023 23:32:06
+--------------------------------------------------
