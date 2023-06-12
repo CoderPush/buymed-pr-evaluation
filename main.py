@@ -187,29 +187,33 @@ def save_detail_result(df_img_paths, suggestions, mode):
 
     detail_result = df_img_paths[["path", "sku", "is_in_db"]].copy()
     detail_result["product_image_url"] = detail_result["sku"].map(sku_to_url)
+
+    similar_images = [x["similar_images"] for x in suggestions]
+    detail_result["time_taken"] = [x["time_found"] for x in suggestions]
+
     detail_result["1st_suggestion"] = [
-        get_suggestion(x, index=0, key="sku") for x in suggestions
+        get_suggestion(x, index=0, key="sku") for x in similar_images
     ]
     detail_result["1st_similarity"] = [
-        get_suggestion(x, index=0, key="similarity") for x in suggestions
+        get_suggestion(x, index=0, key="similarity") for x in similar_images
     ]
     detail_result["1st_suggestion_image_url"] = detail_result["1st_suggestion"].map(
         sku_to_url
     )
     detail_result["2nd_suggestion"] = [
-        get_suggestion(x, index=1, key="sku") for x in suggestions
+        get_suggestion(x, index=1, key="sku") for x in similar_images
     ]
     detail_result["2nd_similarity"] = [
-        get_suggestion(x, index=1, key="similarity") for x in suggestions
+        get_suggestion(x, index=1, key="similarity") for x in similar_images
     ]
     detail_result["2nd_suggestion_image_url"] = detail_result["2nd_suggestion"].map(
         sku_to_url
     )
     detail_result["3rd_suggestion"] = [
-        get_suggestion(x, index=2, key="sku") for x in suggestions
+        get_suggestion(x, index=2, key="sku") for x in similar_images
     ]
     detail_result["3rd_similarity"] = [
-        get_suggestion(x, index=2, key="similarity") for x in suggestions
+        get_suggestion(x, index=2, key="similarity") for x in similar_images
     ]
     detail_result["3rd_suggestion_image_url"] = detail_result["3rd_suggestion"].map(
         sku_to_url
@@ -231,6 +235,7 @@ def save_detail_result(df_img_paths, suggestions, mode):
         "is_in_db",
         "found",
         "top_1",
+        "time_taken",
         "1st_suggestion",
         "1st_similarity",
         "1st_suggestion_image_url",
@@ -270,7 +275,6 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
         response = upload_image(row["path"])
         similar_images = response["similar_images"]
         sku_list = [x["sku"] for x in similar_images]
-        suggestions[index] = similar_images
 
         if row["sku"] in sku_list:
             result["Found rate"] += 1
@@ -284,6 +288,11 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
         response["time_found"] = re.sub("[^0-9.]", "", response["time_found"])
         response["time_found"] = float(response["time_found"])
         result["Average time taken per image"] += response["time_found"]
+
+        suggestions[index] = {
+            "similar_images": similar_images,
+            "time_found": response["time_found"],
+        }
 
         if (index % 50 == 0) and (index > 0):
             time_taken = time.time() - started_time
@@ -324,7 +333,7 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
 
     # calculate 95% quantile of first suggestion similarity
     first_suggestion_similarity = [
-        similar_images[0]["similarity"] for similar_images in suggestions
+        item["similar_images"][0]["similarity"] for item in suggestions
     ]
     result["Suggested Threshold"] = np.quantile(first_suggestion_similarity, 0.05)
 
@@ -340,7 +349,6 @@ def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
     def get_similar_images(index, row):
         response = upload_image(row["path"])
         similar_images = response["similar_images"]
-        suggestions[index] = similar_images
 
         if similar_images[0]["similarity"] < result["Threshold"]:
             result["Rate of not found warning"] += 1
@@ -348,6 +356,11 @@ def evaluate_not_found_rate(df_img_paths: pd.DataFrame, result: dict) -> None:
         response["time_found"] = re.sub("[^0-9.]", "", response["time_found"])
         response["time_found"] = float(response["time_found"])
         result["Average time taken per image"] += response["time_found"]
+
+        suggestions[index] = {
+            "similar_images": similar_images,
+            "time_found": response["time_found"],
+        }
 
         if (index % 50 == 0) and (index > 0):
             time_taken = time.time() - started_time
