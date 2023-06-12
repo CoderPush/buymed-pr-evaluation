@@ -18,7 +18,7 @@ load_dotenv()
 RANDOM_SEED = 1234
 BASE_URL = os.environ.get("BASE_URL")
 UPLOAD_API = os.environ.get("UPLOAD_API")
-
+STR_NOW = datetime.now().strftime('%d%m%Y_%H%M%S')
 
 def initilize_result_dict(not_in_db_flag: bool) -> dict:
     mode = 2 if not_in_db_flag else 1
@@ -113,7 +113,7 @@ def sku_mapping(df_img_paths: pd.DataFrame) -> None:
         )
         columns = ["product_name", "is_in_db"]
         test_input_report[columns].to_csv(
-            f"test_input_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv", index=False
+            f"test_input_{STR_NOW}.csv", index=False
         )
     except Exception as e:
         print("WARNING - sku_mapping(): Cannot export test_input report", e)
@@ -144,7 +144,7 @@ def save_result(result):
 
     # Append result to result.txt with the format key: value and start with the current time
     result["Time"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    with open("result.txt", "a") as f:
+    with open(f"result_{STR_NOW}.txt", "a") as f:
         for key, value in result.items():
             f.write(f"{key}: {value}\n")
         f.write("-" * 50)
@@ -188,17 +188,9 @@ def save_detail_result(df_img_paths, suggestions, mode):
     detail_result = df_img_paths[["path", "sku", "is_in_db"]].copy()
     detail_result["product_image_url"] = detail_result["sku"].map(sku_to_url)
 
-    similar_images = [None] * len(df_img_paths)
-    time_taken = [None] * len(df_img_paths)
-    for index, suggestion in enumerate(suggestions):
-        try:
-            similar_images[index] = suggestion["similar_images"]
-            time_taken[index] = suggestion["time_found"]
-        except Exception as e:
-            print(f"WARNING - save_detail_result(): Cannot get suggestion {index}", e)
-            continue
+    similar_images = [x["similar_images"] for x in suggestions]
+    detail_result["time_taken"] = [x["time_found"] for x in suggestions]
 
-    detail_result["time_taken"] = time_taken
     detail_result["1st_suggestion"] = [
         get_suggestion(x, index=0, key="sku") for x in similar_images
     ]
@@ -234,7 +226,7 @@ def save_detail_result(df_img_paths, suggestions, mode):
     )
 
     output_path = (
-        f"detail_result_mode{mode}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.csv"
+        f"detail_result_mode{mode}_{STR_NOW}.csv"
     )
     columns = [
         "path",
@@ -340,13 +332,9 @@ def evaluate_accuracy(df_img_paths: pd.DataFrame, result: dict) -> None:
     result["Average time taken per image"] /= result["Number of images"]
 
     # calculate 95% quantile of first suggestion similarity
-    first_suggestion_similarity = []
-    for item in suggestions:
-        try:
-            similarity = item["similar_images"][0]["similarity"]
-        except:
-            continue
-        first_suggestion_similarity.append(similarity)
+    first_suggestion_similarity = [
+        item["similar_images"][0]["similarity"] for item in suggestions
+    ]
     result["Suggested Threshold"] = np.quantile(first_suggestion_similarity, 0.05)
 
     save_result(result)
